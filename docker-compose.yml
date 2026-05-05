@@ -8,11 +8,8 @@ services:
     container_name: tienda_frontend
     restart: unless-stopped
     ports:
-      - '80:80'
-    networks:
-      - frontend_net
-    environment:
-      - NGINX_HOST=localhost
+      '80:80'
+  networks: frontend_net
 
 networks:
   frontend_net:
