@@ -1,16 +1,4 @@
-/**
- * Frontend simple para CRUD de productos de la tienda de perritos.
- */
-
-// Determinar la URL base de la API según el host
-const API_BASE = (() => {
-  const host = window.location.hostname;
-  if (host === "localhost" || host === "127.0.0.1") {
-    return "http://localhost:3001/api/productos";
-  }
-  // Para ejecución en EC2 u otro host, usar el mismo hostname y puerto 3001
-  return `http://${host}:3001/api/productos`;
-})();
+const API_BASE = "/api/productos";
 
 let editandoId = null;
 
@@ -48,7 +36,6 @@ function renderProductos(productos) {
   tbody.innerHTML = "";
   productos.forEach((p) => {
     const tr = document.createElement("tr");
-
     tr.innerHTML = `
       <td>${p.id}</td>
       <td>${p.nombre}</td>
@@ -60,23 +47,17 @@ function renderProductos(productos) {
         <button data-id="${p.id}" class="btn-eliminar danger">Eliminar</button>
       </td>
     `;
-
     tbody.appendChild(tr);
   });
 
-  // Asignar eventos a los botones
   document.querySelectorAll(".btn-editar").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
-      editarProducto(id);
-    });
+    btn.addEventListener("click", () => editarProducto(btn.getAttribute("data-id")));
   });
 
   document.querySelectorAll(".btn-eliminar").forEach((btn) => {
     btn.addEventListener("click", () => {
-      const id = btn.getAttribute("data-id");
       if (confirm("¿Seguro que deseas eliminar este producto?")) {
-        eliminarProducto(id);
+        eliminarProducto(btn.getAttribute("data-id"));
       }
     });
   });
@@ -102,30 +83,25 @@ function obtenerDatosFormulario() {
 
 function validarProducto(prod) {
   if (!prod.nombre) return "El nombre es obligatorio.";
-  if (isNaN(prod.precio) || prod.precio < 0) return "El precio debe ser un número mayor o igual a 0.";
-  if (isNaN(prod.stock) || prod.stock < 0) return "El stock debe ser un número mayor o igual a 0.";
+  if (isNaN(prod.precio) || prod.precio < 0) return "El precio debe ser mayor o igual a 0.";
+  if (isNaN(prod.stock) || prod.stock < 0) return "El stock debe ser mayor o igual a 0.";
   return null;
 }
 
 async function guardarProducto() {
   const producto = obtenerDatosFormulario();
   const error = validarProducto(producto);
-  if (error) {
-    setStatus(error, "error");
-    return;
-  }
+  if (error) { setStatus(error, "error"); return; }
 
   try {
     let res;
     if (editandoId) {
-      // Actualizar
       res = await fetch(`${API_BASE}/${editandoId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(producto),
       });
     } else {
-      // Crear
       res = await fetch(API_BASE, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -177,7 +153,6 @@ async function eliminarProducto(id) {
   }
 }
 
-// Eventos
 btnCargar.addEventListener("click", cargarProductos);
 btnGuardar.addEventListener("click", guardarProducto);
 btnCancelar.addEventListener("click", () => {
@@ -185,5 +160,4 @@ btnCancelar.addEventListener("click", () => {
   setStatus("Edición cancelada.", "ok");
 });
 
-// Cargar productos al iniciar
 cargarProductos();
