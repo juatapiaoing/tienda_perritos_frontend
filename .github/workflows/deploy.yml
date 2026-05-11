@@ -59,6 +59,7 @@ jobs:
 
       - name: Deploy en EC2 Frontend
         if: steps.check.outputs.skip != 'true'
+        continue-on-error: true
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
