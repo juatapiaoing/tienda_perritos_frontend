@@ -31,7 +31,21 @@ jobs:
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest
           docker push ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:${{ github.sha }}
 
+      - name: Verificar secrets de EC2
+        id: check
+        env:
+          EC2_HOST: ${{ secrets.EC2_HOST }}
+          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
+        run: |
+          if [ -z "$EC2_HOST" ] || [ -z "$EC2_SSH_KEY" ]; then
+            echo "::warning::Secrets de EC2 no configurados. Saltando deploy a EC2."
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Deploy en EC2 Frontend
+        if: steps.check.outputs.skip != 'true'
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.EC2_HOST }}
