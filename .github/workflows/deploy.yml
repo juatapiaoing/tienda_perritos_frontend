@@ -3,48 +3,48 @@ name: CI/CD Frontend - Tienda Perritos
 on:
   push:
     branches:
-      
-deploy
+      - deploy
+  workflow_dispatch:
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
 
-      
-name: Checkout codigo
-      uses: actions/checkout@v4
+      - name: Checkout codigo
+        uses: actions/checkout@v4
 
-      
-name: Login Docker Hub
-      uses: docker/login-action@v3
-      with:
-        username: ${{ secrets.DOCKERHUB_USERNAME }}
-        password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - name: Login Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      
-name: Build imagen Frontend
-      run: |
-        docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest .
-        docker tag ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest \${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:${{ github.sha }}
+      - name: Build imagen Frontend
+        run: |
+          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest .
+          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest \
+            ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:${{ github.sha }}
 
-      
-name: Push imagen a Docker Hub
-      run: |
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest
-        docker push ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:${{ github.sha }}
+      - name: Push imagen a Docker Hub
+        run: |
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest
+          docker push ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:${{ github.sha }}
 
-      
-name: Deploy en EC2 Frontend
-      uses: appleboy/ssh-action@v1.0.3
-      with:
-        host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USER }}
-        key: ${{ secrets.EC2_SSH_KEY }}
-        script: |
-          docker stop tienda_frontend  true
-          docker rm tienda_frontend  true
-          docker pull ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest
-          docker run -d \--name tienda_frontend \--restart unless-stopped \-p 80:80 \${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest
-          echo "Frontend desplegado OK"
-          docker ps
+      - name: Deploy en EC2 Frontend
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USER }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            docker stop tienda_frontend || true
+            docker rm tienda_frontend || true
+            docker pull ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest
+            docker run -d \
+              --name tienda_frontend \
+              --restart unless-stopped \
+              -p 80:80 \
+              ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest
+            echo "Frontend desplegado OK"
+            docker ps
