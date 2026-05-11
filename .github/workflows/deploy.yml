@@ -20,16 +20,29 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Build imagen Frontend
+      - name: Build y push imagen Frontend
         run: |
-          docker build -t ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest .
-          docker tag ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest \
-            ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:${{ github.sha }}
+          push_with_retry() {
+            local tag=$1
+            for i in 1 2 3; do
+              echo "Push intento $i: $tag"
+              if docker push "$tag"; then
+                return 0
+              fi
+              echo "Intento $i fallo, esperando 15s..."
+              sleep 15
+            done
+            echo "ERROR: Push fallido despues de 3 intentos: $tag"
+            return 1
+          }
 
-      - name: Push imagen a Docker Hub
-        run: |
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:latest
-          docker push ${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend:${{ github.sha }}
+          FRONTEND=${{ secrets.DOCKERHUB_USERNAME }}/tienda-perritos-frontend
+
+          docker build -t $FRONTEND:latest .
+          docker tag $FRONTEND:latest $FRONTEND:${{ github.sha }}
+
+          push_with_retry $FRONTEND:latest
+          push_with_retry $FRONTEND:${{ github.sha }}
 
       - name: Verificar secrets de EC2
         id: check
